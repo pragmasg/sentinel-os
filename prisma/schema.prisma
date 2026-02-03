@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  ELITE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password_hash String
+  role          UserRole  @default(USER)
+  plan_tier     PlanTier  @default(FREE)
+  canvasLayout  Json?     @map("canvas_layout")
+  stripe_customer_id String? @unique
+  stripe_subscription_id String?
+  stripe_price_id String?
+  subscription_status String? // e.g. active, trialing, canceled
+  created_at    DateTime  @default(now())
+
+  portfolios    Portfolio[]
+  toolLogs      ToolExecutionLog[]
+  alerts        Alert[]
+  researchDocs  ResearchDocument[]
+  usageMeters   UsageMeter[]
+
+  @@map("users")
+}
+
+model UsageMeter {
+  id         String   @id @default(cuid())
+  user_id    String
+  key        String   // e.g. research.query
+  period     String   // YYYY-MM
+  count      Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, key, period])
+  @@index([key, period])
+  @@map("usage_meters")
+}
+
+model Alert {
+  id           String   @id @default(cuid())
+  user_id      String
+  portfolio_id String?
+  symbol       String?
+  sector       String?
+  type         String
+  title        String
+  message      String
+  data_json    Json?
+  created_at   DateTime @default(now())
+  read_at      DateTime?
+
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  portfolio    Portfolio? @relation(fields: [portfolio_id], references: [id], onDelete: SetNull)
+  journalEntries JournalEntry[]
+
+  @@index([user_id, created_at])
+  @@index([portfolio_id, created_at])
+  @@map("alerts")
+}
+
+model ResearchDocument {
+  id          String   @id @default(cuid())
+  user_id     String
+  title       String
+  source      String?
+  content     String
+  created_at  DateTime @default(now())
+
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  chunks      ResearchChunk[]
+
+  @@index([user_id, created_at])
+  @@map("research_documents")
+}
+
+model ResearchChunk {
+  id           String   @id @default(cuid())
+  document_id  String
+  idx          Int
+  content      String
+  created_at   DateTime @default(now())
+
+  document     ResearchDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@index([document_id, idx])
+  @@map("research_chunks")
+}
+
+model Portfolio {
+  id            String        @id @default(cuid())
+  user_id       String
+  base_currency String
+  risk_profile  String
+  created_at    DateTime      @default(now())
+
+  user          User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  positions     Position[]
+  trades        TradeEvent[]
+  riskSnapshots RiskSnapshot[]
+  alerts        Alert[]
+
+  @@index([user_id])
+  @@map("portfolios")
+}
+
+model Position {
+  id           String   @id @default(cuid())
+  portfolio_id String
+  symbol       String
+  quantity     Decimal  @db.Decimal(24, 8)
+  avg_cost     Decimal  @db.Decimal(24, 8)
+  asset_class  String
+  sector       String
+  created_at   DateTime @default(now())
+
+  portfolio    Portfolio @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
+
+  @@index([portfolio_id])
+  @@index([symbol])
+  @@map("positions")
+}
+
+model TradeEvent {
+  id           String    @id @default(cuid())
+  portfolio_id String
+  symbol       String
+  side         TradeSide
+  size         Decimal   @db.Decimal(24, 8)
+  price        Decimal   @db.Decimal(24, 8)
+  fee_amount   Decimal?  @db.Decimal(24, 8)
+  fee_pct      Decimal?  @db.Decimal(24, 8)
+  net_amount   Decimal?  @db.Decimal(24, 8)
+  timestamp    DateTime
+  created_at   DateTime  @default(now())
+
+  portfolio    Portfolio   @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
+  journalEntry JournalEntry?
+
+  @@index([portfolio_id])
+  @@index([symbol])
+  @@index([timestamp])
+  @@map("trade_events")
+}
+
+model RiskSnapshot {
+  id            String   @id @default(cuid())
+  portfolio_id  String
+  var           Decimal  @db.Decimal(24, 8)
+  beta          Decimal  @db.Decimal(24, 8)
+  exposure_json Json
+  timestamp     DateTime
+  created_at    DateTime @default(now())
+
+  portfolio     Portfolio @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
+  journalEntries JournalEntry[]
+
+  @@index([portfolio_id])
+  @@index([timestamp])
+  @@map("risk_snapshots")
+}
+
+model JournalEntry {
+  id             String      @id @default(cuid())
+  tradeEventId   String      @unique
+  tradeEvent     TradeEvent  @relation(fields: [tradeEventId], references: [id], onDelete: Cascade)
+
+  // Contexto automático (snapshot del momento)
+  riskSnapshotId String?
+  riskSnapshot   RiskSnapshot? @relation(fields: [riskSnapshotId], references: [id], onDelete: SetNull)
+
+  relatedAlertId String?
+  relatedAlert   Alert?      @relation(fields: [relatedAlertId], references: [id], onDelete: SetNull)
+
+  // Capa humana
+  thesis         String?     @db.Text
+  tags           String[]
+
+  createdAt      DateTime    @default(now())
+
+  @@index([riskSnapshotId])
+  @@index([relatedAlertId])
+  @@map("journal_entries")
+}
+
+model ToolExecutionLog {
+  id             String   @id @default(cuid())
+  user_id        String?
+  tool_name      String
+  security_level String
+  input_json     Json
+  output_json    Json?
+  status         String
+  error_message  String?
+  created_at     DateTime @default(now())
+
+  user           User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([tool_name])
+  @@index([created_at])
+  @@map("tool_execution_logs")
+}
