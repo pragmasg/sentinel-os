@@ -17,25 +17,47 @@ Constraints:
 npm install
 ```
 
-2) Configure env vars
+2) Start PostgreSQL locally (recommended)
 
-Copy `.env.example` to `.env` and set:
-- `DATABASE_URL`
+This repo includes a minimal Postgres 15 container.
+
+```bash
+docker compose up -d db
+```
+
+3) Configure env vars
+
+Copy `.env.local.example` to `.env.local` and set:
+- `DATABASE_URL` (local)
 - `JWT_SECRET`
 - `AI_PROVIDER_KEY` (optional for now)
 - `APP_URL` (used for Stripe redirects)
 - Stripe billing (optional): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_ELITE`
 
-3) Create DB tables
+4) Create DB tables
 
 ```bash
-npm run prisma:migrate
+npx prisma migrate dev
 ```
 
-4) Run dev server
+5) Run dev server
 
 ```bash
 npm run dev
+```
+
+6) Run the scheduler worker (separate process)
+
+The cron scheduler runs in a dedicated Node process to keep Next.js builds clean and edge-safe.
+
+```bash
+npm run worker:scheduler
+```
+
+Or run both app + worker together:
+
+```bash
+npm run dev:all
 ```
 
 Open http://localhost:3000
@@ -46,6 +68,15 @@ Open http://localhost:3000
 - `npm test` (Vitest unit + route handler tests)
 - `npm run prisma:generate`
 - `npm run prisma:migrate`
+
+## Production-mode smoke check (local)
+
+Periodically validate the production build artifacts:
+
+```bash
+npm run build
+npm start
+```
 
 ## Repo Structure (mandated)
 

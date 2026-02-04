@@ -1,4 +1,3 @@
-import cron from "node-cron";
 import { logger } from "@/src/utils/logger";
 
 declare global {
@@ -11,6 +10,10 @@ export function initScheduler() {
   globalThis.__schedulerStarted = true;
 
   logger.info("scheduler initializing");
+
+  // Use CJS entry to avoid bundlers pulling node-cron's ESM build.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const cron = require("node-cron") as typeof import("node-cron");
 
   // Daily Intelligence Digest — 07:00
   cron.schedule("0 7 * * *", async () => {
@@ -26,6 +29,5 @@ export function initScheduler() {
   cron.schedule("0 8 * * 1", async () => {
     logger.info({ trigger: "weekly-review" }, "automation trigger");
   });
-
-  logger.info("scheduler started");
 }
+  logger.info("scheduler started");

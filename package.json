@@ -16,6 +16,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
+    "worker:scheduler": "tsx src/worker/scheduler.ts",
+    "dev:all": "concurrently -k \"npm run dev\" \"npm run worker:scheduler\"",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -37,6 +39,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+      "concurrently": "^9.2.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^18",
@@ -50,6 +53,7 @@
     "next-test-api-route-handler": "^5.0.3",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "tsx": "^4.20.5",
     "vitest": "^4.0.18"
   }
 }

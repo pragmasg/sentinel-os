@@ -1,5 +1,4 @@
 import { getEnv } from "@/src/config/env.server";
-import { initScheduler } from "@/src/scheduler";
 import { logger } from "@/src/utils/logger";
 
 export async function register() {
@@ -7,7 +6,7 @@ export async function register() {
   void getEnv();
 
   try {
-    initScheduler();
+    // Scheduler is started by a separate worker process in local/prod.
   } catch (err) {
     logger.error({ err }, "scheduler init failed");
   }
