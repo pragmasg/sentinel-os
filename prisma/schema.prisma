@@ -89,6 +89,10 @@ model ResearchDocument {
   user_id     String
   title       String
   source      String?
+  kind        String?  // e.g. "note", "news"
+  ticker      String?
+  url         String?
+  published_at DateTime?
   content     String
   created_at  DateTime @default(now())
 
@@ -96,7 +100,26 @@ model ResearchDocument {
   chunks      ResearchChunk[]
 
   @@index([user_id, created_at])
+  @@index([user_id, ticker, created_at])
+  @@unique([user_id, url])
   @@map("research_documents")
+}
+
+model MarketQuote {
+  id         String   @id @default(cuid())
+  symbol     String
+  provider   String
+  currency   String?
+  price      Decimal  @db.Decimal(24, 8)
+  fetched_at DateTime
+  raw_json   Json?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([symbol, provider])
+  @@index([symbol])
+  @@index([fetched_at])
+  @@map("market_quotes")
 }
 
 model ResearchChunk {

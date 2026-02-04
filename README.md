@@ -22,6 +22,7 @@ npm install
 This repo includes a minimal Postgres 15 container.
 
 ```bash
+cd sentinel-os
 docker compose up -d db
 ```
 

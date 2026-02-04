@@ -3,6 +3,8 @@ import { z } from "zod";
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   AI_PROVIDER_KEY: z.string().optional().default(""),
+  MARKET_API_KEY: z.string().optional().default(""),
+  NEWS_API_KEY: z.string().optional().default(""),
   JWT_SECRET: z.string().min(32),
   APP_URL: z.string().url().optional().default("http://localhost:3000"),
 
@@ -24,6 +26,8 @@ export function getEnv(): Env {
   const parsed = envSchema.safeParse({
     DATABASE_URL: process.env.DATABASE_URL,
     AI_PROVIDER_KEY: process.env.AI_PROVIDER_KEY,
+    MARKET_API_KEY: process.env.MARKET_API_KEY,
+    NEWS_API_KEY: process.env.NEWS_API_KEY,
     JWT_SECRET: process.env.JWT_SECRET,
     APP_URL: process.env.APP_URL,
 

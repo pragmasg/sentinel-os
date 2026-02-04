@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MarketNewsPanel } from "./MarketNewsPanel";
 
 export default function DashboardPage() {
   return (
@@ -19,6 +20,9 @@ export default function DashboardPage() {
         </header>
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="md:col-span-2">
+            <MarketNewsPanel />
+          </div>
           <section className="rounded-xl border border-white/10 bg-neutral-950 p-6">
             <h2 className="text-sm font-semibold text-white/80">Portfolio Command Center</h2>
             <p className="mt-2 text-sm text-white/60">
